@@ -1,0 +1,25 @@
+# command to launch kafka with docker compose
+#    docker-compose -f simple-docker-kafka-config.yml up
+
+# commands to create topic
+#    docker exec -it kafka_simple_container /bin/sh
+#    cd opt
+#    cd kafka
+#    bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic [my-topic] --bootstrap-server localhost:9092
+
+# write some events
+#    bin/kafka-console-producer.sh --topic [my-topic] --bootstrap-server localhost:9092
+#    [write your messages]
+#    stop console with ctrl+c
+
+# read the events
+#    bin/kafka-console-consumer.sh --topic [my-topic] --from-beginning --bootstrap-server localhost:9092 (--partition 0)
+#    stop console with ctrl+c
+
+# list topics from opt/kafka
+#    bin/kafka-topics.sh --zookeeper zookeeper:2181 --list
+
+# access zookeeper
+#    bin/zookeeper-shell.sh zookeeper:2181
+#    then go, e.g., ls /
+#    ctrl+c

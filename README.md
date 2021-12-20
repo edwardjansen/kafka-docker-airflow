@@ -8,26 +8,24 @@ of how to set things up in a basic way.
 Make sure you have docker-compose installed.
 
 #### Setup
-The .yml file sets up a container for kafka and its dependency zookeeper. These run on the localhost and their default 
-ports. The Kafka broker lives within the Kafka container. For our purposes, we need not worry about the zookeeper 
-container. Then, using the python-kafka API, we set up two clients: the producer and the consumer. The producer can send/write
-messages to the broker. The consumer can get/read messages from the broker. Both clients are ran locally on the host
-machine.
+The .yml file sets up a container for kafka, its dependency zookeeper, airflow and its dependency postgres. 
+These connect to the localhost via their default ports. The Kafka broker lives within the Kafka container. For our purposes, 
+we need not worry about the zookeeper and postgres containers. Then, using the python-kafka API, we set up two clients: 
+the producer and the consumer. The producer can send/write messages to the broker. The consumer can get/read messages 
+from the broker. Both clients will be triggered by an Airflow DAG and will thus run on the Airflow server. As such, the
+Airflow server needs to have python-kafka installed. To achieve this, we have a separate Dockerfile in the airflow_docker
+folder whose purpose it is to execute ```pip install requirements.txt``` within the container. We'll schedule the DAGs
+to trigger only ``@once``, i.e. on start-up. We'll be able to manually trigger the DAGs as well via the GUI available
+at the port specified in the .yml file.
 
 #### Running the application
-Make sure you install the requirements (which is only kafka-python). This is necessary since we run the clients locally.
-Then, the servers can be launched by simply going
+Since the clients run on the airflow container, there is no need to install requirements locally.
+The servers can be launched by simply going
 ```
 docker-compose -f simple-docker-kafka-config.yml up
 ```
-Open a new terminal and activate the Consumer client
-```
-python kafka_consumer_test
-```
-Since the consumer will keep listening to the broker until you tell it to stop manually (ctrl+c), the terminal will be
-"taken". Therefore, open a third terminal and send data to the broker by going
-```
-python kafka_producer_test
-```
-If this succeeds, it should print some metadata. If not, it will print an exception statement. The consumer terminal 
-should now show the message sent.
+(Strictly speaking, you'll first need to build the image using the same cmd but with 'up' replaced by 'build'. However,
+I seem to have observed that docker compose will do this automatically if you go for 'up' right away.)
+
+Access the Airflow GUI via ``localhost:8080`` and toggle the DAGs on. This will trigger the first run. After this,
+you can trigger runs yourself using the GUI.
