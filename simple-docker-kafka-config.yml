@@ -1,0 +1,79 @@
+version: "3"
+
+services:
+  postgres:
+      image: postgres:9.6
+      container_name: postgres_simple_container
+      environment:
+        - POSTGRES_USER=airflow
+        - POSTGRES_PASSWORD=airflow
+        - POSTGRES_DB=airflow
+
+  airflow:
+    build: "./airflow_docker"
+    container_name: airflow_simple_container
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=Local
+    volumes:   # mount the following local folders
+      - ./dags:/usr/local/airflow/dags
+      - ./data:/usr/local/airflow/data
+      - ./models:/usr/local/airflow/models
+    ports:
+      - "8080:8080"                               # expose port
+    command: webserver
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper_simple_container
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka_simple_container
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka           # specify the docker host IP at which other containers can reach the broker
+      KAFKA_CREATE_TOPICS: "my-topic-2:1:1"           # create a topic called 'TopicA"  with 1 partition and 1 replica
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181     # specify where the broker can reach Zookeeper
+      KAFKA_LISTENERS: PLAINTEXT://kafka:9092          # the list of addresses on which the Kafka broker will listen on for incoming connections.
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092  # Kafka sends the value of this variable to clients during their connection. After receiving that value, the clients use it for sending/consuming records to/from the Kafka broker.y connect to it.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+# command to launch kafka with docker compose
+#    docker-compose -f simple-docker-kafka-config.yml up
+
+# commands to create topic
+#    docker exec -it kafka_simple_container /bin/sh
+#    cd opt
+#    cd kafka
+#    bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic [my-topic] --bootstrap-server localhost:9092
+
+# write some events
+#    bin/kafka-console-producer.sh --topic [my-topic] --bootstrap-server localhost:9092
+#    [write your messages]
+#    stop console with ctrl+c
+
+# read the events
+#    bin/kafka-console-consumer.sh --topic [my-topic] --from-beginning --bootstrap-server localhost:9092 (--partition 0)
+#    stop console with ctrl+c
+
+# list topics from opt/kafka
+#    bin/kafka-topics.sh --zookeeper zookeeper:2181 --list
+
+# access zookeeper
+#    bin/zookeeper-shell.sh zookeeper:2181
+#    then go, e.g., ls /
+#    ctrl+c
+
